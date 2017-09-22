@@ -27,3 +27,9 @@ var editor = new Vue({
 </script>
 ```
 
+Demo
+=
+<p>
+  <img src="https://github.com/vzuburlis/vue-editor/blob/master/screenshot.jpg"  />
+</p>
+
