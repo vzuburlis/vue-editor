@@ -4,34 +4,60 @@ Vue.filter('reverse', function(value) {
 });
 
 
-
+var ve_node_style={
+	IMG:{'width':[],'height':[]},
+	SPAN:{'color':[],'font-family':[],'font-size':[]},
+	P:{'align':[]}
+}
 var mydata={
-		buttons_def:{
-			bold:{label:"<i class='fa fa-bold'></i>",action:"setNode",args:'B'},
-			italian:{label:"<i class='fa fa-italic'></i>",action:"setNode",args:'I'},
-			h1:{label:"<i class='fa fa-header'></i>",action:"setNode",args:'H1'},
-			del:{label:"<i class='fa fa-strikethrough'></i>",action:"setNode",args:'DEL'},
-			ins:{label:"<i class='fa fa-underline'></i>",action:"setNode",args:'INS'},
-			sub:{label:"<i class='fa fa-subscript'></i>",action:"setNode",args:'SUB'},
-			sup:{label:"<i class='fa fa-superscript'></i>",action:"setNode",args:'SUP'},
-			unset:{label:"Tx",action:"unsetNode",args:['B','I','DEL','INS','SUB','SUB','SUP','BLOCKQUOTE']},
-			ul:{label:"<i class='fa fa-list-ul'></i>",action:"insertNode",args:['UL','<li> ',true]},
-			ol:{label:"<i class='fa fa-list-ol'></i>",action:"insertNode",args:['OL','<li> ',true]},
-			pre:{label:"<i class='fa fa-code'></i>",action:"insertNode",args:['PRE','<code> ',true]},
-			blockquote:{label:"<i class='fa fa-blockquote'></i>",action:"insertNode",args:['BLOCKQUOTE','Blockquote',true]},
-			img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['IMG','<img src="http://spacecronos.com/assets/cache/post_513.jpg" ><figcaption>Image Caption</figcaption>',true,{url:'www',caption:'text'}]},
-			table:{label:"<i class='fa fa-table'></i>",action:"insertNode",args:['TABLE','<tr><td><td><td><tr><td><td><td><tr><td><td><td>']}
-		},
-		buttons_i:['bold','italian','ul','img'],
-		figure:{url:'',caption:''},
-		elpath:[]
-		}
+	buttons_def:{
+		bold:{label:"<i class='fa fa-bold'></i>",action:"setNode",args:'B'},
+		italian:{label:"<i class='fa fa-italic'></i>",action:"setNode",args:'I'},
+		h1:{label:"<i class='fa fa-header'></i>",action:"setNode",args:'H1'},
+		del:{label:"<i class='fa fa-strikethrough'></i>",action:"setNode",args:'DEL'},
+		ins:{label:"<i class='fa fa-underline'></i>",action:"setNode",args:'INS'},
+		sub:{label:"<i class='fa fa-subscript'></i>",action:"setNode",args:'SUB'},
+		sup:{label:"<i class='fa fa-superscript'></i>",action:"setNode",args:'SUP'},
+		unset:{label:"Tx",action:"unsetNode",args:['B','I','DEL','INS','SUB','SUB','SUP','BLOCKQUOTE']},
+		ul:{label:"<i class='fa fa-list-ul'></i>",action:"insertNode",args:['UL','<li> ',true]},
+		ol:{label:"<i class='fa fa-list-ol'></i>",action:"insertNode",args:['OL','<li> ',true]},
+		pre:{label:"<i class='fa fa-code'></i>",action:"insertNode",args:['PRE','<code> ',true]},
+		blockquote:{label:"<i class='fa fa-quote-left'></i>",action:"insertNode",args:['BLOCKQUOTE','Blockquote',true]},
+		img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['FIGURE','<img src="img.jpg" ><figcaption>Image Caption</figcaption>',false]},
+		table:{label:"<i class='fa fa-table'></i>",action:"insertNode",args:['TABLE','<tr><td><td><td><tr><td><td><td><tr><td><td><td>']},
+		save:{label:"<i class='fa fa-save'></i>",action:"saveHtml"}
+	},
+	buttons_i:['bold','italian','ul','ol','blockquote','img','save'],
+	figure:[],
+	elpath:[],
+	node2edit: false,
+	nodeobj: [],
+	areaID:''
+}
+
 Vue.component('vue-editor', {
-	template: '<div class="g-editor"><div class="g-editor-bar"><button v-for="btn in buttons_i" @click="btnAction(btn)" :index="btn">{{{buttons_def[btn].label}}}</button></div><div><button v-for="btn in elpath | reverse">{{btn.nodeName}}</button></div><div contenteditable="true" id="div" v-on:click="onclick" v-on:keydown="onkeydown" class="g-editor-area" >{{{text}}}</div><div v-for="(key, value) in figure">{{ key }}: <input v-model="value"></div></div>',
+	template: '<div class="ve-editor">\
+	<div class="ve-editor-bar"><button v-for="btn in buttons_i" @click="btnAction(btn)" :index="btn">{{{buttons_def[btn].label}}}</button></div>\
+	<div style="position:relative">\
+		<div contenteditable="true" :id="areaID" v-on:click="onclick" v-on:keydown="onkeydown" class="ve-editor-area" >{{{text}}}</div>\
+		<div v-if="node2edit!=false" class="ve-edit-node">\
+			<table><tr v-for="(key, value) in nodeobj">\
+                <td>{{ key | capitalize | bold}}<td><input v-model="value" v-on:input="updateEditNode"></tr>\
+            </table>\
+			<button v-on:click="deleteEditNode">Del</button><button v-on:click="unsetEditNode">Unset</button><button v-on:click="exitEditNode">Exit</button>\
+		</div>\
+	</div>\
+	<div class="ve-footbar"><button v-for="(index,btn) in elpath | reverse" v-on:click="editNodeIndx(index)">&lt;{{btn.nodeName | lowercase}}&gt;</button></div>\
+	</div>',
   	data: function(){ return mydata },
 	props: ['buttons','text'],
 	created: function () {
 		if(typeof this.buttons!='undefined') this.buttons_i=this.buttons.split(' ')
+		
+		do{
+			this.areaID = 'g-editor-area-'+Math.floor(Math.random()*100000)
+		}while(document.getElementById(this.areaID))
+			
 	},
 	methods: {
 		btnAction: function(index) {
@@ -46,6 +72,9 @@ Vue.component('vue-editor', {
 				break
 				case 'insertNode':
 				this.insertNode(args[0],args[1],args[2],args[3])
+				break
+				case 'saveHtml':
+				this.saveHtml()
 				break
 			}
 
@@ -80,14 +109,14 @@ Vue.component('vue-editor', {
 			if(editable) {
 				this.range.selectNodeContents(el)
 			}else{
-				el.contentEditable=false
+				//el.contentEditable=false
 
-				if(obj!=null) {
+				/*if(obj!=null) {
 					_this=this
 					el.addEventListener('click',function(){
 						_this.figureEdit(obj)
 					},false)
-				}
+				}*/
 			}
 		},
 		insertText: function (html) {
@@ -114,14 +143,54 @@ Vue.component('vue-editor', {
 			//this.range.setStartAfter(el)
 			parent.removeChild(el);
 		},
+		editNodeIndx: function (indx) {
+			this.editNode(this.elpath[this.elpath.length-indx-1])
+		},
+		editNode: function (node) {
+			this.node2edit = node
+			this.nodeobj = {'class':node.class,id:node.id}
+			let ve = ve_node_style[this.node2edit.nodeName]
+			if(ve) for(style in ve) {
+				this.nodeobj[style] = node.style[style]
+			}
+		},
+		updateEditNode: function () {
+			this.node2edit.class = this.nodeobj.class
+			this.node2edit.id = this.nodeobj.id
+			let ve = ve_node_style[this.node2edit.nodeName]
+			if(ve) for(style in ve) {
+				this.node2edit.style[style] = this.nodeobj[style]
+			}
+		},
+		deleteEditNode: function () {
+			res = confirm('Remove node and its components?')
+			if(res == true) {
+				this.node2edit.parentNode.removeChild(this.node2edit)
+			}
+		},
+		unsetEditNode: function () {
+			var el = this.node2edit
+			var parent = el.parentNode;
+			while( el.firstChild ) {
+				parent.insertBefore(  el.firstChild, el );
+			}
+			parent.removeChild(el);
+		},
+		exitEditNode: function () {
+			this.node2edit = false
+		},
 		figureEdit: function(obj) {
 			console.log(obj)
 			this.figure=obj
 		},
+		saveHtml: function() {
+			console.log(document.getElementById(this.areaID).innerHTML)
+		},
 		onEditor: function () {
-			el = document.getElementById("div")
+			el = document.getElementById(this.areaID)
 			if (window.getSelection) {
 				this.sel = window.getSelection();
+				this.findElPath()
 
 				if (this.sel.rangeCount > 0 && this.sel.getRangeAt) {
 					for (var i = 0; i < this.sel.rangeCount; ++i) {
@@ -129,22 +198,28 @@ Vue.component('vue-editor', {
 							return false;
 						}
 					}
-					this.findElPath()
-
+					
 					this.range = this.sel.getRangeAt(0);
+					this.node2edit = false
 					return true;
 
 				}
-			}
+			}/* else if ( (sel = document.selection) && sel.type != "Control") {
+				return this.isOrContains(sel.createRange().parentElement(), el);
+			}*/
 
 			return false;
 		},
 		findElPath: function() {
 			this.elpath = new Array()
 			i=0
+			if(this.sel.id == this.areaID) return
 			el = this.sel.anchorNode
+			if(el.id==this.areaID) return
+			if(el) el=el.parentNode; else el=this.sel.parentNode
 			while(el) {
-				if(el.classList) if(el.classList.contains('g-editor')) break
+				if(el.id == this.areaID) break
+				//if(el.classList) if(el.classList.contains('ve-editor-area')) break
 				console.log(el.nodeName)
 				this.elpath[i] = el
 				i++
@@ -160,7 +235,7 @@ Vue.component('vue-editor', {
 		},
 		onclick: function() {
 			if(!this.onEditor()) return
-			if(event.target.nodeName=='IMG') alert("ok")
+			if(event.target.nodeName=='IMG') this.editNode(event.target)
 		},
 		onkeydown: function() {
 			if(!this.onEditor()) return
@@ -175,7 +250,8 @@ Vue.component('vue-editor', {
         		if ((sel.anchorNode.nodeName=='#text') && pNodes.includes(sel.anchorNode.parentNode.nodeName)) return
 				document.execCommand('insertHTML', false, '<br>');
 				if ((sel.anchorNode.nodeName!='#text')) this.unsetNode(sel.anchorNode.nodeName)
-
+				//this.unsetNode(sel.anchorNode.nodeName)
+				//event.preventDefault()
 				return false;
     		}
   		}

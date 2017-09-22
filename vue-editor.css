@@ -1,0 +1,18 @@
+	:root{--ve-bg: #ddd}
+	.ve-editor{border:1px solid grey;}
+	.ve-editor-bar{background: var(--ve-bg);}
+	.ve-footbar{background: var(--ve-bg);}
+	.ve-editor-area{min-height: 200px; overflow: scroll; padding:10px}
+	.ve-editor-area table{width:100%}
+	.ve-editor-area th,.ve-editor-area td{border:1px dashed grey}
+	.ve-editor-area pre{background-color: #d8d8d8; padding: 6px; border: 1px solid #ccc}
+	.ve-editor-area blockquote{border-left: 3px solid blue}
+	.ve-edit-node{
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--ve-bg);
+		padding: 10px;
+		min-width: 30%;
+	}
