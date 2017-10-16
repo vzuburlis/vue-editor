@@ -6,33 +6,44 @@ Vue.filter('reverse', function(value) {
 
 var ve_node_style={
 	IMG:{'width':[],'height':[]},
-	SPAN:{'color':[],'font-family':[],'font-size':[]},
-	P:{'align':[]}
+	SPAN:{'color':[],'font-family':[],'font-size':[]}
 }
+
 var mydata={
 	buttons_def:{
 		bold:{label:"<i class='fa fa-bold'></i>",action:"setNode",args:'B'},
 		italian:{label:"<i class='fa fa-italic'></i>",action:"setNode",args:'I'},
-		h1:{label:"<i class='fa fa-header'></i>",action:"setNode",args:'H1'},
+        h1:{label:"<i class='fa fa-header'></i><sub>1</sub>",action:"setNode",args:'H1'},
+        h2:{label:"<i class='fa fa-header'></i><sub>2</sub>",action:"setNode",args:'H2'},
 		del:{label:"<i class='fa fa-strikethrough'></i>",action:"setNode",args:'DEL'},
 		ins:{label:"<i class='fa fa-underline'></i>",action:"setNode",args:'INS'},
 		sub:{label:"<i class='fa fa-subscript'></i>",action:"setNode",args:'SUB'},
 		sup:{label:"<i class='fa fa-superscript'></i>",action:"setNode",args:'SUP'},
-		unset:{label:"Tx",action:"unsetNode",args:['B','I','DEL','INS','SUB','SUB','SUP','BLOCKQUOTE']},
+		unset:{label:"T<sub>x</sub>",action:"unsetNode",args:['B','I','DEL','INS','SUB','SUB','SUP','BLOCKQUOTE']},
 		ul:{label:"<i class='fa fa-list-ul'></i>",action:"insertNode",args:['UL','<li> ',true]},
 		ol:{label:"<i class='fa fa-list-ol'></i>",action:"insertNode",args:['OL','<li> ',true]},
 		pre:{label:"<i class='fa fa-code'></i>",action:"insertNode",args:['PRE','<code> ',true]},
-		blockquote:{label:"<i class='fa fa-quote-left'></i>",action:"insertNode",args:['BLOCKQUOTE','Blockquote',true]},
+        blockquote:{label:"<i class='fa fa-quote-left'></i>",action:"setNode",args:'BLOCKQUOTE'},
+        aleft:{label:"<i class='fa fa-align-left'></i>",action:"setStyle",args:['text-align','left']},
+        amiddle:{label:"<i class='fa fa-align-center'></i>",action:"setStyle",args:['text-align','center']},
+        ajustify:{label:"<i class='fa fa-align-justify'></i>",action:"setStyle",args:['text-align','justify']},
+        aright:{label:"<i class='fa fa-align-right'></i>",action:"setStyle",args:['text-align','right']},
+        fontb:{label:"<i class='fa fa-bold'></i>",action:"setStyle",args:['fontWeight','bold']},
 		img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['FIGURE','<img src="img.jpg" ><figcaption>Image Caption</figcaption>',false]},
-		table:{label:"<i class='fa fa-table'></i>",action:"insertNode",args:['TABLE','<tr><td><td><td><tr><td><td><td><tr><td><td><td>']},
+        table:{label:"<i class='fa fa-table'></i>",action:"insertNode",args:['TABLE','<tr><td><td><td><tr><td><td><td><tr><td><td><td>']},
+        p:{label:"<b>P</b>",action:"append",args:'<p><br></p>'},
 		save:{label:"<i class='fa fa-save'></i>",action:"saveHtml"}
 	},
-	buttons_i:['bold','italian','ul','ol','blockquote','img','save'],
+	buttons_i:['bold','italian','ins','del','h1','h2','unset','ul','ol','blockquote','aleft','amiddle','aright','img','p'],
+    node_buttons:{
+
+    },
 	figure:[],
 	elpath:[],
 	node2edit: false,
 	nodeobj: [],
-	areaID:''
+	areaID:'',
+    previous_endOffset:0
 }
 
 Vue.component('vue-editor', {
@@ -42,7 +53,9 @@ Vue.component('vue-editor', {
 		<div contenteditable="true" :id="areaID" v-on:click="onclick" v-on:keydown="onkeydown" class="ve-editor-area" >{{{text}}}</div>\
 		<div v-if="node2edit!=false" class="ve-edit-node">\
 			<table><tr v-for="(key, value) in nodeobj">\
-                <td>{{ key | capitalize | bold}}<td><input v-model="value" v-on:input="updateEditNode"></tr>\
+                <td>{{ key | capitalize | bold}}\
+                <td><input v-model="value" v-on:input="updateEditNode">\
+                </tr>\
             </table>\
 			<button v-on:click="deleteEditNode">Del</button><button v-on:click="unsetEditNode">Unset</button><button v-on:click="exitEditNode">Exit</button>\
 		</div>\
@@ -53,11 +66,11 @@ Vue.component('vue-editor', {
 	props: ['buttons','text'],
 	created: function () {
 		if(typeof this.buttons!='undefined') this.buttons_i=this.buttons.split(' ')
-		
+
 		do{
 			this.areaID = 'g-editor-area-'+Math.floor(Math.random()*100000)
 		}while(document.getElementById(this.areaID))
-			
+
 	},
 	methods: {
 		btnAction: function(index) {
@@ -69,6 +82,15 @@ Vue.component('vue-editor', {
 				break
 				case 'unsetNode':
 				this.unsetNode(args)
+				break
+                case 'setStyle':
+				this.setStyle(args[0],args[1])
+				break
+                case 'setAttr':
+				this.setAttr(args[0],args[1])
+				break
+                case 'append':
+				this.append(args)
 				break
 				case 'insertNode':
 				this.insertNode(args[0],args[1],args[2],args[3])
@@ -82,14 +104,14 @@ Vue.component('vue-editor', {
 		setNode: function (x,html=' ') {
 			x=x.toUpperCase()
 			if(!this.onEditor()) return
-			console.log(this.sel.anchorNode.parentNode.nodeName)
+			//console.log(this.sel.anchorNode.parentNode.nodeName)
 			if(this.sel.anchorNode.parentNode.nodeName==x) {
 				this.unsetNode(x)
 				return
 			}
 
-			if(this.sel.getRangeAt(0)==null) {
-				this.insertNode(x,' ',true)
+            if(getSelection()=='') {
+				this.insertNode(x,x,true)
 				return
 			}
 
@@ -97,6 +119,32 @@ Vue.component('vue-editor', {
 			el.innerHTML = getSelection();
 			this.range.deleteContents();
 			this.insert(el)
+		},
+        setStyle: function (attr,value) {
+            pN=this.sel.anchorNode
+            if(pN.nodeType==3) pN=pN.parentNode
+
+			if(pN.style[attr]==value) {
+                pN.style[attr]=''
+                //pN.style.removeProperty(attr)
+                return
+            }
+
+            pN.style[attr]=value
+		},
+        setAttr: function (attr,value) {
+            pN=this.sel.anchorNode
+            if(pN.nodeType==3) pN=pN.parentNode
+
+			if(pN.hasAttribute(attr)) if(pN.getAttribute(attr)==value){
+                pN.removeAttribute(attr)
+                return
+            }
+
+            pN.setAttribute(attr,value)
+		},
+        append: function (value) {
+            document.getElementById(this.areaID).innerHTML+=value
 		},
 		insertNode: function (x,html=' ',editable=true,obj=null) {
 			x=x.toUpperCase()
@@ -108,15 +156,6 @@ Vue.component('vue-editor', {
 
 			if(editable) {
 				this.range.selectNodeContents(el)
-			}else{
-				//el.contentEditable=false
-
-				/*if(obj!=null) {
-					_this=this
-					el.addEventListener('click',function(){
-						_this.figureEdit(obj)
-					},false)
-				}*/
 			}
 		},
 		insertText: function (html) {
@@ -140,7 +179,7 @@ Vue.component('vue-editor', {
 			while( el.firstChild ) {
 				parent.insertBefore(  el.firstChild, el );
 			}
-			//this.range.setStartAfter(el)
+
 			parent.removeChild(el);
 		},
 		editNodeIndx: function (indx) {
@@ -149,17 +188,22 @@ Vue.component('vue-editor', {
 		editNode: function (node) {
 			this.node2edit = node
 			this.nodeobj = {'class':node.class,id:node.id}
+            if(node.nodeName=='IMG') this.nodeobj.src = node.src
 			let ve = ve_node_style[this.node2edit.nodeName]
 			if(ve) for(style in ve) {
 				this.nodeobj[style] = node.style[style]
+                if(style=='align') this.nodeobj[style] = node.getAttribute(style)
 			}
 		},
 		updateEditNode: function () {
 			this.node2edit.class = this.nodeobj.class
 			this.node2edit.id = this.nodeobj.id
+            if(this.node2edit.nodeName=='IMG') this.node2edit.src = this.nodeobj.src
 			let ve = ve_node_style[this.node2edit.nodeName]
 			if(ve) for(style in ve) {
-				this.node2edit.style[style] = this.nodeobj[style]
+                if(style=='align') {
+                    this.node2edit.setAttribute(style,this.nodeobj[style])
+                } else this.node2edit.style[style] = this.nodeobj[style]
 			}
 		},
 		deleteEditNode: function () {
@@ -180,7 +224,7 @@ Vue.component('vue-editor', {
 			this.node2edit = false
 		},
 		figureEdit: function(obj) {
-			console.log(obj)
+			//console.log(obj)
 			this.figure=obj
 		},
 		saveHtml: function() {
@@ -198,15 +242,13 @@ Vue.component('vue-editor', {
 							return false;
 						}
 					}
-					
+
 					this.range = this.sel.getRangeAt(0);
 					this.node2edit = false
 					return true;
 
 				}
-			}/* else if ( (sel = document.selection) && sel.type != "Control") {
-				return this.isOrContains(sel.createRange().parentElement(), el);
-			}*/
+			}
 
 			return false;
 		},
@@ -219,8 +261,6 @@ Vue.component('vue-editor', {
 			if(el) el=el.parentNode; else el=this.sel.parentNode
 			while(el) {
 				if(el.id == this.areaID) break
-				//if(el.classList) if(el.classList.contains('ve-editor-area')) break
-				console.log(el.nodeName)
 				this.elpath[i] = el
 				i++
 				el = el.parentNode
@@ -238,25 +278,21 @@ Vue.component('vue-editor', {
 			if(event.target.nodeName=='IMG') this.editNode(event.target)
 		},
 		onkeydown: function() {
-			if(!this.onEditor()) return
+            if(!this.onEditor()) return
 		},
 		uncopy: function(event) {
 			return
     		if (event.keyCode == 13) {
 				sel = window.getSelection();
 				pNodes = ['P','LI']
-				if (sel.anchorNode.nodeName=='#text') console.log('P,LI<-'+sel.anchorNode.nodeName)
+
         		if (pNodes.includes(sel.anchorNode.nodeName)) return
         		if ((sel.anchorNode.nodeName=='#text') && pNodes.includes(sel.anchorNode.parentNode.nodeName)) return
 				document.execCommand('insertHTML', false, '<br>');
 				if ((sel.anchorNode.nodeName!='#text')) this.unsetNode(sel.anchorNode.nodeName)
-				//this.unsetNode(sel.anchorNode.nodeName)
-				//event.preventDefault()
 				return false;
     		}
   		}
 	}
 
 })
-
-
