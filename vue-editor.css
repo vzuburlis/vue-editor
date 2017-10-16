@@ -9,7 +9,7 @@
 	.ve-editor-area table{width:100%}
 	.ve-editor-area th,.ve-editor-area td,.ve-editor-area figure,p{border:1px dashed #bbb}
 	.ve-editor-area figure{display: inline-block;}
-	.ve-editor-area pre{background-color: #d8d8d8; padding: 6px; border: 1px solid #ccc}
+	.ve-editor-area pre{background-color: #e6e6e6; padding: 6px; border: 1px solid #ccc}
 	.ve-editor-area blockquote{border-left: 3px solid grey; padding:10px; font-size: 1.3em; font-style: italic}
 	.ve-edit-node{
 		position: absolute;

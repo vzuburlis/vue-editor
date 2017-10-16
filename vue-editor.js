@@ -29,12 +29,14 @@ var mydata={
         ajustify:{label:"<i class='fa fa-align-justify'></i>",action:"setStyle",args:['text-align','justify']},
         aright:{label:"<i class='fa fa-align-right'></i>",action:"setStyle",args:['text-align','right']},
         fontb:{label:"<i class='fa fa-bold'></i>",action:"setStyle",args:['fontWeight','bold']},
-		img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['FIGURE','<img src="img.jpg" ><figcaption>Image Caption</figcaption>',false]},
+        //img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['FIGURE','<img src="img.jpg" ><figcaption>Image Caption</figcaption>',false]},
+        img:{label:"<i class='fa fa-image'></i>",action:"insertNode",args:['FIGURE','<img src="img.jpg" ><figcaption>Image Caption</figcaption>',false]},
         table:{label:"<i class='fa fa-table'></i>",action:"insertNode",args:['TABLE','<tr><td><td><td><tr><td><td><td><tr><td><td><td>']},
+        code:{label:"<i class='fa fa-code'></i>",action:"insertNode",args:['PRE','<code><br></code>']},
         p:{label:"<b>P</b>",action:"append",args:'<p><br></p>'},
 		save:{label:"<i class='fa fa-save'></i>",action:"saveHtml"}
 	},
-	buttons_i:['bold','italian','ins','del','h1','h2','unset','ul','ol','blockquote','aleft','amiddle','aright','img','p'],
+	buttons_i:['bold','italian','ins','del','h1','h2','unset','ul','ol','blockquote','aleft','amiddle','aright','img','code','p'],
     node_buttons:{
 
     },
